@@ -261,7 +261,7 @@ class LightweightMMM:
       degrees_seasonality: int = 2,
       seasonality_frequency: int = 52,
       weekday_seasonality: bool = False,
-      learn_seasonality: bool = True,
+      learn_seasonality: bool = False,
       media_names: Optional[Sequence[str]] = None,
       number_warmup: int = 1000,
       number_samples: int = 1000,
