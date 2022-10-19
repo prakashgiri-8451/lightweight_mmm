@@ -261,6 +261,7 @@ class LightweightMMM:
       degrees_seasonality: int = 2,
       seasonality_frequency: int = 52,
       weekday_seasonality: bool = False,
+      learn_seasonality: bool = True,
       media_names: Optional[Sequence[str]] = None,
       number_warmup: int = 1000,
       number_samples: int = 1000,
@@ -369,7 +370,8 @@ class LightweightMMM:
         frequency=seasonality_frequency,
         transform_function=self._model_transform_function,
         weekday_seasonality=weekday_seasonality,
-        custom_priors=custom_priors)
+        custom_priors=custom_priors,
+        learn_seasonality=learn_seasonality)
 
     self.custom_priors = custom_priors
     if media_names is not None:
@@ -388,6 +390,7 @@ class LightweightMMM:
     self._degrees_seasonality = degrees_seasonality
     self._seasonality_frequency = seasonality_frequency
     self._weekday_seasonality = weekday_seasonality
+    self._learn_seasonality = learn_seasonality
     self.media = media
     self._extra_features = extra_features
     self._mcmc = mcmc
@@ -415,7 +418,8 @@ class LightweightMMM:
       weekday_seasonality: bool,
       model: Callable[[Any], None],
       posterior_samples: Dict[str, jnp.ndarray],
-      custom_priors: Dict[str, Prior]
+      custom_priors: Dict[str, Prior],
+      learn_seasonality: bool,
       ) -> Dict[str, jnp.ndarray]:
     """Encapsulates the numpyro.infer.Predictive function for predict method.
 
@@ -450,7 +454,8 @@ class LightweightMMM:
             frequency=frequency,
             transform_function=transform_function,
             custom_priors=custom_priors,
-            weekday_seasonality=weekday_seasonality)
+            weekday_seasonality=weekday_seasonality,
+            learn_seasonality=learn_seasonality)
 
   def predict(
       self,
@@ -524,6 +529,7 @@ class LightweightMMM:
         degrees_seasonality=self._degrees_seasonality,
         frequency=self._seasonality_frequency,
         weekday_seasonality=self._weekday_seasonality,
+        learn_seasonality=self._learn_seasonality,
         transform_function=self._model_transform_function,
         model=self._model_function,
         custom_priors=self.custom_priors,

@@ -290,7 +290,8 @@ def media_mix_model(
     custom_priors: MutableMapping[str, Prior],
     transform_kwargs: Optional[MutableMapping[str, Any]] = None,
     weekday_seasonality: bool = False,
-    extra_features: Optional[jnp.array] = None
+    extra_features: Optional[jnp.array] = None,
+    learn_seasonality=False,
     ) -> None:
   """Media mix model.
 
@@ -386,7 +387,7 @@ def media_mix_model(
       degrees=degrees_seasonality,
       frequency=frequency,
       gamma_seasonality=gamma_seasonality)
-  # For national model's case
+  #For national model's case
   trend = jnp.arange(data_size)
   media_einsum = "tc, c -> t"  # t = time, c = channel
   coef_seasonality = 1
@@ -404,10 +405,16 @@ def media_mix_model(
           fn=custom_priors.get(
               _COEF_SEASONALITY, default_priors[_COEF_SEASONALITY]))
   # expo_trend is B(1, 1) so that the exponent on time is in [.5, 1.5].
-  prediction = (
-      intercept + coef_trend * trend ** expo_trend +
-      seasonality * coef_seasonality +
-      jnp.einsum(media_einsum, media_transformed, coef_media))
+  if learn_seasonality:
+      prediction = (
+          intercept + coef_trend * trend ** expo_trend +
+          seasonality * coef_seasonality +
+          jnp.einsum(media_einsum, media_transformed, coef_media))
+  else:
+       prediction = (
+          intercept + coef_trend * trend ** expo_trend +
+          jnp.einsum(media_einsum, media_transformed, coef_media))
+
   if extra_features is not None:
     plate_prefixes = ("extra_feature",)
     extra_features_einsum = "tf, f -> t"  # t = time, f = feature
