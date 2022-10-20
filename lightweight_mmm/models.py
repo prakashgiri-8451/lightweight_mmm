@@ -87,7 +87,7 @@ TRANSFORM_PRIORS_NAMES = immutabledict.immutabledict({
         frozenset((_LAG_WEIGHT, _HALF_MAX_EFFECTIVE_CONCENTRATION, _SLOPE))
 })
 
-GEO_ONLY_PRIORS = frozenset((_COEF_SEASONALITY,))
+#GEO_ONLY_PRIORS = frozenset((_COEF_SEASONALITY,))
 
 
 def _get_default_priors() -> Mapping[str, Prior]:
@@ -283,8 +283,7 @@ def media_mix_model(
     custom_priors: MutableMapping[str, Prior],
     transform_kwargs: Optional[MutableMapping[str, Any]] = None,
     weekday_seasonality: bool = False,
-    extra_features: Optional[jnp.array] = None,
-    learn_seasonality=False,
+    extra_features: Optional[jnp.array] = None
     ) -> None:
   """Media mix model.
 
@@ -376,11 +375,11 @@ def media_mix_model(
   # TODO(): Add conversion of prior for HalfNormal distribution.
   if media_data.ndim == 3:  # For geo model's case
     trend = jnp.expand_dims(trend, axis=-1)
-    seasonality = jnp.expand_dims(seasonality, axis=-1)
+    #seasonality = jnp.expand_dims(seasonality, axis=-1)
     media_einsum = "tcg, cg -> tg"  # t = time, c = channel, g = geo
     if weekday_seasonality:
       weekday_series = jnp.expand_dims(weekday_series, axis=-1)
-      
+
   prediction = (
     intercept + coef_trend * trend ** expo_trend +
     jnp.einsum(media_einsum, media_transformed, coef_media))

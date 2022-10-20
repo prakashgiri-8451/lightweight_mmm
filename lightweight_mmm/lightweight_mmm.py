@@ -326,20 +326,15 @@ class LightweightMMM:
             not_used_custom_priors)
       custom_priors = self._preprocess_custom_priors(
           custom_priors=custom_priors)
-      geo_custom_priors = set(custom_priors.keys()).intersection(
-          models.GEO_ONLY_PRIORS)
-      if media.ndim == 2 and geo_custom_priors:
-        raise ValueError(
-            "The given data is for national models but custom_prior contains "
-            "priors for the geo version of the model. Please either remove geo "
-            "priors for national model or pass media data with geo dimension.")
+      # geo_custom_priors = set(custom_priors.keys()).intersection(
+      #     models.GEO_ONLY_PRIORS)
+      # if media.ndim == 2 and geo_custom_priors:
+      #   raise ValueError(
+      #       "The given data is for national models but custom_prior contains "
+      #       "priors for the geo version of the model. Please either remove geo "
+      #       "priors for national model or pass media data with geo dimension.")
     else:
       custom_priors = {}
-
-    if weekday_seasonality and seasonality_frequency == 52:
-      logging.warn("You have chosen daily seasonality and frequency 52 "
-                   "(weekly), please check you made the right seasonality "
-                   "choices.")
 
     if extra_features is not None:
       extra_features = jnp.array(extra_features)
@@ -366,8 +361,8 @@ class LightweightMMM:
         media_prior=jnp.array(media_prior),
         transform_function=self._model_transform_function,
         weekday_seasonality=weekday_seasonality,
-        custom_priors=custom_priors,
-        learn_seasonality=learn_seasonality)
+        custom_priors=custom_priors
+        )
 
     self.custom_priors = custom_priors
     if media_names is not None:
@@ -398,7 +393,7 @@ class LightweightMMM:
   @functools.partial(
       jax.jit,
       static_argnums=(0,),
-      static_argnames=("degrees_seasonality", "weekday_seasonality",
+      static_argnames=( "weekday_seasonality",
                        "transform_function", "model"))
   def _predict(
       self,
