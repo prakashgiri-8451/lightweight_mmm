@@ -99,7 +99,7 @@ def _get_default_priors() -> Mapping[str, Prior]:
       _EXPO_TREND: dist.Uniform(low=0.5, high=1.5),
       _SIGMA: dist.Gamma(concentration=1., rate=1.),
       _WEEKDAY: dist.Normal(loc=0., scale=.5),
-      _COEF_EXTRA_FEATURES: dist.Normal(loc=0., scale=1.)
+      _COEF_EXTRA_FEATURES: dist.Normal(loc=1., scale=1.)
   })
 
 
