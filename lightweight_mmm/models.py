@@ -59,20 +59,17 @@ _INTERCEPT = "intercept"
 _COEF_TREND = "coef_trend"
 _EXPO_TREND = "expo_trend"
 _SIGMA = "sigma"
-_GAMMA_SEASONALITY = "gamma_seasonality"
 _WEEKDAY = "weekday"
 _COEF_EXTRA_FEATURES = "coef_extra_features"
-_COEF_SEASONALITY = "coef_seasonality"
 
 MODEL_PRIORS_NAMES = frozenset((
     _INTERCEPT,
     _COEF_TREND,
     _EXPO_TREND,
     _SIGMA,
-    _GAMMA_SEASONALITY,
     _WEEKDAY,
-    _COEF_EXTRA_FEATURES,
-    _COEF_SEASONALITY))
+    _COEF_EXTRA_FEATURES
+    ))
 
 _EXPONENT = "exponent"
 _LAG_WEIGHT = "lag_weight"
@@ -101,10 +98,8 @@ def _get_default_priors() -> Mapping[str, Prior]:
       _COEF_TREND: dist.Normal(loc=0., scale=1.),
       _EXPO_TREND: dist.Uniform(low=0.5, high=1.5),
       _SIGMA: dist.Gamma(concentration=1., rate=1.),
-      _GAMMA_SEASONALITY: dist.Normal(loc=0., scale=1.),
       _WEEKDAY: dist.Normal(loc=0., scale=.5),
-      _COEF_EXTRA_FEATURES: dist.Normal(loc=0., scale=1.),
-      _COEF_SEASONALITY: dist.HalfNormal(scale=.5)
+      _COEF_EXTRA_FEATURES: dist.Normal(loc=0., scale=1.)
   })
 
 
@@ -284,8 +279,6 @@ def media_mix_model(
     media_data: jnp.ndarray,
     target_data: jnp.ndarray,
     media_prior: jnp.ndarray,
-    degrees_seasonality: int,
-    frequency: int,
     transform_function: TransformFunction,
     custom_priors: MutableMapping[str, Prior],
     transform_kwargs: Optional[MutableMapping[str, Any]] = None,
@@ -357,14 +350,6 @@ def media_mix_model(
         coef_media = numpyro.sample(
             name="coef_media", fn=dist.HalfNormal(scale=coef_media))
 
-  with numpyro.plate(name=f"{_GAMMA_SEASONALITY}_sin_cos_plate", size=2):
-    with numpyro.plate(name=f"{_GAMMA_SEASONALITY}_plate",
-                       size=degrees_seasonality):
-      gamma_seasonality = numpyro.sample(
-          name=_GAMMA_SEASONALITY,
-          fn=custom_priors.get(
-              _GAMMA_SEASONALITY, default_priors[_GAMMA_SEASONALITY]))
-
   if weekday_seasonality:
     with numpyro.plate(name=f"{_WEEKDAY}_plate", size=7):
       weekday = numpyro.sample(
@@ -382,11 +367,7 @@ def media_mix_model(
       value=transform_function(media_data,
                                custom_priors=custom_priors,
                                **transform_kwargs if transform_kwargs else {}))
-  seasonality = media_transforms.calculate_seasonality(
-      number_periods=data_size,
-      degrees=degrees_seasonality,
-      frequency=frequency,
-      gamma_seasonality=gamma_seasonality)
+
   #For national model's case
   trend = jnp.arange(data_size)
   media_einsum = "tc, c -> t"  # t = time, c = channel
@@ -399,21 +380,10 @@ def media_mix_model(
     media_einsum = "tcg, cg -> tg"  # t = time, c = channel, g = geo
     if weekday_seasonality:
       weekday_series = jnp.expand_dims(weekday_series, axis=-1)
-    with numpyro.plate(name="seasonality_plate", size=n_geos):
-      coef_seasonality = numpyro.sample(
-          name=_COEF_SEASONALITY,
-          fn=custom_priors.get(
-              _COEF_SEASONALITY, default_priors[_COEF_SEASONALITY]))
-  # expo_trend is B(1, 1) so that the exponent on time is in [.5, 1.5].
-  if learn_seasonality:
-      prediction = (
-          intercept + coef_trend * trend ** expo_trend +
-          seasonality * coef_seasonality +
-          jnp.einsum(media_einsum, media_transformed, coef_media))
-  else:
-       prediction = (
-          intercept + coef_trend * trend ** expo_trend +
-          jnp.einsum(media_einsum, media_transformed, coef_media))
+      
+  prediction = (
+    intercept + coef_trend * trend ** expo_trend +
+    jnp.einsum(media_einsum, media_transformed, coef_media))
 
   if extra_features is not None:
     plate_prefixes = ("extra_feature",)

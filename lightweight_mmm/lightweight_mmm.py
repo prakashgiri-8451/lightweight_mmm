@@ -151,8 +151,8 @@ class LightweightMMM:
       init=False, repr=False, hash=False, compare=False)
   custom_priors: MutableMapping[str, Prior] = dataclasses.field(
       init=False, repr=False, hash=False, compare=True)
-  _degrees_seasonality: int = dataclasses.field(init=False, repr=False)
   _weekday_seasonality: bool = dataclasses.field(init=False, repr=False)
+
   _media_prior: jnp.DeviceArray = dataclasses.field(
       init=False, repr=False, hash=False, compare=True)
   _extra_features: jnp.DeviceArray = dataclasses.field(
@@ -258,10 +258,8 @@ class LightweightMMM:
       media_prior: jnp.ndarray,
       target: jnp.ndarray,
       extra_features: Optional[jnp.ndarray] = None,
-      degrees_seasonality: int = 2,
-      seasonality_frequency: int = 52,
       weekday_seasonality: bool = False,
-      learn_seasonality: bool = False,
+
       media_names: Optional[Sequence[str]] = None,
       number_warmup: int = 1000,
       number_samples: int = 1000,
@@ -366,8 +364,6 @@ class LightweightMMM:
         extra_features=extra_features,
         target_data=jnp.array(target),
         media_prior=jnp.array(media_prior),
-        degrees_seasonality=degrees_seasonality,
-        frequency=seasonality_frequency,
         transform_function=self._model_transform_function,
         weekday_seasonality=weekday_seasonality,
         custom_priors=custom_priors,
@@ -387,10 +383,7 @@ class LightweightMMM:
     self._number_chains = number_chains
     self._target = target
     self._train_media_size = train_media_size
-    self._degrees_seasonality = degrees_seasonality
-    self._seasonality_frequency = seasonality_frequency
     self._weekday_seasonality = weekday_seasonality
-    self._learn_seasonality = learn_seasonality
     self.media = media
     self._extra_features = extra_features
     self._mcmc = mcmc
@@ -413,13 +406,11 @@ class LightweightMMM:
       media_data: jnp.ndarray,
       extra_features: Optional[jnp.ndarray],
       media_prior: jnp.ndarray,
-      degrees_seasonality: int, frequency: int,
       transform_function: Callable[[Any], jnp.ndarray],
       weekday_seasonality: bool,
       model: Callable[[Any], None],
       posterior_samples: Dict[str, jnp.ndarray],
       custom_priors: Dict[str, Prior],
-      learn_seasonality: bool,
       ) -> Dict[str, jnp.ndarray]:
     """Encapsulates the numpyro.infer.Predictive function for predict method.
 
@@ -450,12 +441,10 @@ class LightweightMMM:
             extra_features=extra_features,
             media_prior=media_prior,
             target_data=None,
-            degrees_seasonality=degrees_seasonality,
-            frequency=frequency,
             transform_function=transform_function,
             custom_priors=custom_priors,
-            weekday_seasonality=weekday_seasonality,
-            learn_seasonality=learn_seasonality)
+            weekday_seasonality=weekday_seasonality
+        )
 
   def predict(
       self,
@@ -526,10 +515,7 @@ class LightweightMMM:
         media_data=full_media,
         extra_features=full_extra_features,
         media_prior=jnp.array(self._media_prior),
-        degrees_seasonality=self._degrees_seasonality,
-        frequency=self._seasonality_frequency,
         weekday_seasonality=self._weekday_seasonality,
-        learn_seasonality=self._learn_seasonality,
         transform_function=self._model_transform_function,
         model=self._model_function,
         custom_priors=self.custom_priors,
